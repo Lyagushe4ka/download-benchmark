@@ -1,7 +1,5 @@
 import { REQUEST_COUNT, runBenchmark, summarize } from "./benchmark.ts";
 
-const MIB = 1024 * 1024;
-
 function usage(): never {
   console.error("Usage: npm start -- <http(s)-url>");
   process.exit(1);
@@ -28,33 +26,11 @@ function parseUrl(raw: string | undefined): URL {
   return url;
 }
 
-function formatMib(bytes: number): string {
-  return (bytes / MIB).toFixed(2);
-}
-
-function formatMs(ms: number): string {
-  return ms.toFixed(1);
-}
-
 async function main(): Promise<void> {
   const url = parseUrl(process.argv[2]);
-
-  console.log(`url: ${url.href}`);
-  console.log(`requests: ${REQUEST_COUNT} (sequential)`);
-
-  const samples = await runBenchmark(url.href, REQUEST_COUNT, (index, sample) => {
-    const number = String(index + 1).padStart(2, " ");
-    console.log(
-      `${number}  ${formatMs(sample.durationMs)} ms  ${formatMib(sample.bytes)} MiB`,
-    );
-  });
-
+  const samples = await runBenchmark(url.href, REQUEST_COUNT);
   const summary = summarize(samples);
-  console.log(`average time: ${formatMs(summary.averageMs)} ms`);
-  console.log(
-    `total downloaded: ${formatMib(summary.totalBytes)} MiB (${summary.totalBytes} bytes)`,
-  );
-  console.log(`download speed: ${summary.speedMibPerSec.toFixed(2)} MiB/s`);
+  console.log(`${summary.speedMibPerSec.toFixed(2)} MiB/s`);
 }
 
 main().catch((error: unknown) => {

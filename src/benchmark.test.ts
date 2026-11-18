@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
+import http from "node:http";
 import { describe, it } from "node:test";
-import { readBodyByteLength, summarize } from "./benchmark.ts";
+import { readBodyByteLength, runBenchmark, summarize } from "./benchmark.ts";
 
 const MIB = 1024 * 1024;
 
@@ -26,6 +27,52 @@ describe("summarize", () => {
 
   it("rejects an empty series", () => {
     assert.throws(() => summarize([]), /No samples/);
+  });
+});
+
+describe("runBenchmark", () => {
+  it("pauses between requests and keeps the pause out of the measured time", async () => {
+    const body = Buffer.alloc(100);
+    const starts: number[] = [];
+    const server = http.createServer((_req, res) => {
+      starts.push(Date.now());
+      res.end(body);
+    });
+
+    await new Promise<void>((resolve) => {
+      server.listen(0, "127.0.0.1", resolve);
+    });
+
+    const address = server.address();
+    if (address === null || typeof address === "string") {
+      throw new Error("Test server did not bind to a port");
+    }
+
+    try {
+      const samples = await runBenchmark(
+        `http://127.0.0.1:${address.port}/payload`,
+        3,
+        80,
+      );
+
+      assert.equal(samples.length, 3);
+      assert.ok(starts[1]! - starts[0]! >= 70);
+      assert.ok(starts[2]! - starts[1]! >= 70);
+      for (const sample of samples) {
+        assert.equal(sample.bytes, 100);
+        assert.ok(sample.durationMs < 70);
+      }
+    } finally {
+      await new Promise<void>((resolve, reject) => {
+        server.close((error) => {
+          if (error) {
+            reject(error);
+            return;
+          }
+          resolve();
+        });
+      });
+    }
   });
 });
 

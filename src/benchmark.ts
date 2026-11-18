@@ -1,5 +1,6 @@
 export const REQUEST_COUNT = 10;
 export const REQUEST_TIMEOUT_MS = 60_000;
+export const DELAY_BETWEEN_REQUESTS_MS = 5_000;
 
 const MIB = 1024 * 1024;
 
@@ -82,10 +83,16 @@ export async function measureOnce(
   };
 }
 
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
+}
+
 export async function runBenchmark(
   url: string,
   count = REQUEST_COUNT,
-  onSample?: (index: number, sample: Sample) => void,
+  delayMs = DELAY_BETWEEN_REQUESTS_MS,
 ): Promise<Sample[]> {
   const samples: Sample[] = [];
 
@@ -93,10 +100,13 @@ export async function runBenchmark(
     try {
       const sample = await measureOnce(url);
       samples.push(sample);
-      onSample?.(index, sample);
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       throw new Error(`request ${index + 1}/${count} failed: ${message}`);
+    }
+
+    if (index < count - 1) {
+      await sleep(delayMs);
     }
   }
 
