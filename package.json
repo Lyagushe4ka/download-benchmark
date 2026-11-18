@@ -1,0 +1,20 @@
+{
+  "name": "download-benchmark",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Ten sequential HTTP downloads: average time, total bytes, speed in MiB/s",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "tsx src/index.ts",
+    "test": "tsx --test src/benchmark.test.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "^24.10.1",
+    "tsx": "^4.20.6",
+    "typescript": "^5.9.3"
+  }
+}
