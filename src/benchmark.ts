@@ -1,7 +1,8 @@
 export const REQUEST_COUNT = 10;
 export const REQUEST_TIMEOUT_MS = 60_000;
-export const DELAY_BETWEEN_REQUESTS_MS = 5_000;
+export const DELAY_BETWEEN_REQUESTS_MS = 1_000;
 
+const KIB = 1024;
 const MIB = 1024 * 1024;
 
 export type Sample = {
@@ -15,6 +16,13 @@ export type Summary = {
   totalBytes: number;
   totalMs: number;
   speedMibPerSec: number;
+  speedKibPerSec: number;
+};
+
+export type SuccessEvent = {
+  index: number;
+  count: number;
+  sample: Sample;
 };
 
 export function summarize(samples: readonly Sample[]): Summary {
@@ -31,6 +39,7 @@ export function summarize(samples: readonly Sample[]): Summary {
 
   const totalSeconds = totalMs / 1000;
   const speedMibPerSec = totalSeconds === 0 ? 0 : totalBytes / MIB / totalSeconds;
+  const speedKibPerSec = totalSeconds === 0 ? 0 : totalBytes / KIB / totalSeconds;
 
   return {
     count: samples.length,
@@ -38,6 +47,7 @@ export function summarize(samples: readonly Sample[]): Summary {
     totalBytes,
     totalMs,
     speedMibPerSec,
+    speedKibPerSec,
   };
 }
 
@@ -93,6 +103,7 @@ export async function runBenchmark(
   url: string,
   count = REQUEST_COUNT,
   delayMs = DELAY_BETWEEN_REQUESTS_MS,
+  onSuccess?: (event: SuccessEvent) => void,
 ): Promise<Sample[]> {
   const samples: Sample[] = [];
 
@@ -100,6 +111,7 @@ export async function runBenchmark(
     try {
       const sample = await measureOnce(url);
       samples.push(sample);
+      onSuccess?.({ index: index + 1, count, sample });
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       throw new Error(`request ${index + 1}/${count} failed: ${message}`);

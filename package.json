@@ -3,13 +3,13 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "Ten sequential HTTP downloads: average time, total bytes, speed in MiB/s",
+  "description": "Ten sequential HTTP downloads: per-request log and speed in MiB/s and KiB/s",
   "engines": {
     "node": ">=20"
   },
   "scripts": {
     "start": "tsx src/index.ts",
-    "test": "tsx --test src/benchmark.test.ts",
+    "test": "tsx --test src/benchmark.test.ts src/live.test.ts",
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {

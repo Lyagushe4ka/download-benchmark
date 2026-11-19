@@ -1,4 +1,11 @@
-import { REQUEST_COUNT, runBenchmark, summarize } from "./benchmark.ts";
+import {
+  DELAY_BETWEEN_REQUESTS_MS,
+  REQUEST_COUNT,
+  runBenchmark,
+  summarize,
+  type SuccessEvent,
+  type Summary,
+} from "./benchmark.ts";
 
 function usage(): never {
   console.error("Usage: npm start -- <http(s)-url>");
@@ -26,11 +33,28 @@ function parseUrl(raw: string | undefined): URL {
   return url;
 }
 
+function formatSpeeds(summary: Summary): string {
+  return `${summary.speedMibPerSec.toFixed(2)} MiB/s, ${summary.speedKibPerSec.toFixed(2)} KiB/s`;
+}
+
+function logSuccess(event: SuccessEvent): void {
+  const speed = summarize([event.sample]);
+  const seconds = (event.sample.durationMs / 1000).toFixed(2);
+  console.log(
+    `${event.index}/${event.count} ok ${event.sample.bytes} bytes ${seconds}s ${formatSpeeds(speed)}`,
+  );
+}
+
 async function main(): Promise<void> {
   const url = parseUrl(process.argv[2]);
-  const samples = await runBenchmark(url.href, REQUEST_COUNT);
+  const samples = await runBenchmark(
+    url.href,
+    REQUEST_COUNT,
+    DELAY_BETWEEN_REQUESTS_MS,
+    logSuccess,
+  );
   const summary = summarize(samples);
-  console.log(`${summary.speedMibPerSec.toFixed(2)} MiB/s`);
+  console.log(formatSpeeds(summary));
 }
 
 main().catch((error: unknown) => {

@@ -17,11 +17,13 @@ describe("summarize", () => {
     assert.equal(summary.totalBytes, 4 * MIB);
     assert.equal(summary.totalMs, 4000);
     assert.equal(summary.speedMibPerSec, 1);
+    assert.equal(summary.speedKibPerSec, 1024);
   });
 
   it("reports zero speed when the measured time is zero", () => {
     const summary = summarize([{ durationMs: 0, bytes: MIB }]);
     assert.equal(summary.speedMibPerSec, 0);
+    assert.equal(summary.speedKibPerSec, 0);
     assert.equal(summary.totalBytes, MIB);
   });
 
@@ -49,12 +51,19 @@ describe("runBenchmark", () => {
     }
 
     try {
+      const successes: number[] = [];
       const samples = await runBenchmark(
         `http://127.0.0.1:${address.port}/payload`,
         3,
         80,
+        (event) => {
+          successes.push(event.index);
+          assert.equal(event.count, 3);
+          assert.equal(event.sample.bytes, 100);
+        },
       );
 
+      assert.deepEqual(successes, [1, 2, 3]);
       assert.equal(samples.length, 3);
       assert.ok(starts[1]! - starts[0]! >= 70);
       assert.ok(starts[2]! - starts[1]! >= 70);
